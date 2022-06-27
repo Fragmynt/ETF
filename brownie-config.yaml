@@ -1,0 +1,15 @@
+dotenv: .env
+
+wallets:
+  OWNER_PRIVATE: ${OWNER_PRIVATE}
+  DEPLOYMENT_PRIVATE: ${DEPLOYMENT_PRIVATE}
+
+compiler:
+    evm_version: null
+    solc:
+        version: null
+        optimizer:
+            enabled: true
+            runs: 200
+    vyper:
+        version: null

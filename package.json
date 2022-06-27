@@ -1,0 +1,28 @@
+{
+  "name": "bmynt",
+  "version": "1.0.0",
+  "description": "Network-pegged, bonded MYNT for FEN",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Fragmynt/bMYNT.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Fragmynt/bMYNT/issues"
+  },
+  "homepage": "https://github.com/Fragmynt/bMYNT#readme",
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.6.0",
+    "@openzeppelin/contracts-upgradeable": "^4.6.0",
+    "@openzeppelin/truffle-upgrades": "^1.15.0",
+    "chai": "^4.3.6"
+  }
+}
