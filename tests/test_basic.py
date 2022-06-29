@@ -65,3 +65,39 @@ def test_pause_and_unpause():
     # Try pausing as a new owner
     etf_contract.pause({'from': accounts[1]})
     assert etf_contract.paused() == True
+
+
+def test_withdraw_as_an_undeposited_user():
+
+    # Wait for the start of a 10 second period so that the calibrate function can be called
+    while int(time.time()%10) != 0:
+        time.sleep(0.1)
+
+    # Define contracts
+    etf_contract = deploy_etf(10, 5, 5*10**18)
+
+
+    # Deploy token
+    token_contract = deploy_token()
+
+    # Set amounts
+    token_amount = 2*10**18
+
+    # Submit token amount
+    token_contract.mint(accounts[3], token_amount, {'from': accounts[0]})
+    token_contract.approve(etf_contract.address, token_amount, {'from': accounts[3]})
+    etf_contract.submitToken(token_contract, token_amount, {'from': accounts[3]})
+
+    # Try to withdraw
+    with brownie.reverts("401: Insufficient amount deposited"):
+        etf_contract.withdraw(1, {'from': accounts[2]})
+
+    # Try to calibrate token
+    amount_withdrawable, can_withdraw, reason = etf_contract.getUserExpectedTokenCalibration(accounts[2], token_contract)
+
+    # Check that the user cannot withdraw
+    assert reason == "404: User has not deposited any MYNT"
+    assert can_withdraw == False
+
+
+

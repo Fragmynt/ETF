@@ -63,7 +63,7 @@ contract networkETF is Initializable, ContextUpgradeable, OwnableUpgradeable, Pa
     function withdraw(uint amount_) whenNotPaused() public payable returns(bool){
 
         require(amount_ > 0, "400: Invalid amount");
-        require(amount_ <= fMathPool.to_uint(fundManager.users[_msgSender()].deposit), "401: Insufficient amount");
+        require(amount_ <= fMathPool.to_uint(fundManager.users[_msgSender()].deposit), "401: Insufficient amount deposited");
 
         //Set bonds for fund & user
         fundManager.users[_msgSender()].deposit = fMathUD60x18.sub(fundManager.users[_msgSender()].deposit, fMathPool.from_base_to_60x18(amount_));
@@ -243,6 +243,12 @@ contract networkETF is Initializable, ContextUpgradeable, OwnableUpgradeable, Pa
             reason = "402: User has allocated tokens before in this calibration cycle";
         }
 
+        // Ensure user has deposited > 0
+        if ( fMathPool.to_uint(fundManager.users[user].deposit) == 0) {
+            canWithdraw = false;
+            reason = "404: User has not deposited any MYNT";
+        }
+
         //Return user the tokens based on existing bonds, and update their timeTokenAllocated
         fMath.UD60x18 memory userBonds = fundManager.users[user].deposit;
         fMath.UD60x18 memory totalTokenBonds = fMathUD60x18.sub(fundManager.myntDeposited, fundManager.tokenBondsUsed[token] );
@@ -278,6 +284,12 @@ contract networkETF is Initializable, ContextUpgradeable, OwnableUpgradeable, Pa
             (block.timestamp - fundManager.cycleLength)){
                 canWithdraw = false;
                 reason = "402: User has allocated MYNT before in this calibration cycle";
+            }
+
+            // Ensure user has deposited > 0
+            if ( fMathPool.to_uint(fundManager.users[user].deposit) == 0) {
+                canWithdraw = false;
+                reason = "404: User has not deposited any MYNT";
             }
 
             //Return user the tokens based on existing bonds, and update their timeTokenAllocated
