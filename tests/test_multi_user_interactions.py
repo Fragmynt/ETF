@@ -66,9 +66,9 @@ def test_multi_user_interactions():
     token_1_contract.setTest(False)
 
     # Calibrate as user 1
-    amount_withdrawable, can_withdraw, reason = etf_contract.getUserExpectedTokenCalibration(accounts[1], token_1_contract)
-    assert can_withdraw == True
-    assert amount_withdrawable == (first_token_submission)*5/(5+5+2)
+    amount_withdrawable_user_1_calibration_1, can_withdraw_user_1_calibration_1, reason_user_1_calibration_1, = etf_contract.getUserExpectedTokenCalibration(accounts[1], token_1_contract)
+    assert can_withdraw_user_1_calibration_1 == True
+    assert amount_withdrawable_user_1_calibration_1 == (first_token_submission)*5/(5+5+2)
     etf_contract.calibrateToken(accounts[1], token_1_contract, {'from': accounts[1]})
     assert token_1_contract.balanceOf(accounts[1]) == (first_token_submission)*5/(5+5+2)
 
@@ -95,9 +95,13 @@ def test_multi_user_interactions():
     token_1_contract.setTest(False)
     assert etf_contract.isCalibrationOpen() == True
 
-    # User 2 should be able to calibrate
+    # User 2 should be able to calibrate; add a leeway for accuracy
     etf_contract.calibrateToken(accounts[2], token_1_contract, {'from': accounts[2]})
-    assert token_1_contract.balanceOf(accounts[2]) == (first_token_submission)*2/(5+5+2)
+    assert (
+        token_1_contract.balanceOf(accounts[2]) +30 >
+        int((first_token_submission-amount_withdrawable_user_1_calibration_1)*2/(5+5+2)) 
+        > token_1_contract.balanceOf(accounts[2]) -30
+        )
 
     # Submit token 2 to ETF
     token_2_contract.mint(accounts[9], first_token_submission, {'from': accounts[0]})

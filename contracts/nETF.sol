@@ -82,10 +82,6 @@ contract networkETF is Initializable, ContextUpgradeable, OwnableUpgradeable, Pa
 
     function calibrateToken(address user, address token) whenNotPaused() public {
 
-        //Ensure withdrawable is true
-        (fMath.UD60x18 memory userWithdrawableAmount, bool isWithdrawable, string memory reason) = _getUserExpectedTokenCalibration( user,  token);
-        require(isWithdrawable, reason);
-
         // Check & update token data if necessary
         // Update token data for cycle
         uint tokenLastUpdated = fundManager.tokenLastUpdated[token];
@@ -94,7 +90,11 @@ contract networkETF is Initializable, ContextUpgradeable, OwnableUpgradeable, Pa
             fundManager.tokenBondsUsed[token] = fMathUD60x18.fromUint(0);
         }
         fundManager.tokenLastUpdated[token] = block.timestamp;
-     
+
+        //Ensure withdrawable is true
+        (fMath.UD60x18 memory userWithdrawableAmount, bool isWithdrawable, string memory reason) = _getUserExpectedTokenCalibration( user,  token);
+        require(isWithdrawable, reason);
+
         IERC20(token).transfer(user, fMathPool.to_uint(userWithdrawableAmount) );
 
         // Update user's time token allocated & token data
@@ -109,10 +109,6 @@ contract networkETF is Initializable, ContextUpgradeable, OwnableUpgradeable, Pa
 
     function calibrateMynt(address payable user) whenNotPaused() public payable {
 
-        //Ensure withdrawable is true
-        (fMath.UD60x18 memory userWithdrawableAmount, bool isWithdrawable, string memory reason) =_getUserExpectedMyntCalibration( user);
-        require(isWithdrawable, reason);
-
         // Check & update MYNT data if necessary
         // Update MYNT data for cycle
         uint myntLastUpdated = fundManager.myntLastUpdated;
@@ -121,6 +117,10 @@ contract networkETF is Initializable, ContextUpgradeable, OwnableUpgradeable, Pa
             fundManager.myntBondsUsed = fMathUD60x18.fromUint(0);
         }
         fundManager.myntLastUpdated = block.timestamp;
+
+        //Ensure withdrawable is true
+        (fMath.UD60x18 memory userWithdrawableAmount, bool isWithdrawable, string memory reason) =_getUserExpectedMyntCalibration( user);
+        require(isWithdrawable, reason);
 
         //Return user the tokens based on existing bonds, and update their timeTokenAllocated
         user.transfer(fMathPool.to_uint(userWithdrawableAmount));
@@ -223,6 +223,15 @@ contract networkETF is Initializable, ContextUpgradeable, OwnableUpgradeable, Pa
         bool canWithdraw, 
         string memory reason
     ) {
+
+        // Check & update token data if necessary
+        // Update token data for cycle
+        uint tokenLastUpdated = fundManager.tokenLastUpdated[token];
+        fMath.UD60x18 memory tokenBondsUsed = fundManager.tokenBondsUsed[token];
+        //If cycle bonds have not been allocated for this token yet, set to 0
+        if (tokenLastUpdated < (block.timestamp - fundManager.cycleLength)) {
+            tokenBondsUsed = fMathUD60x18.fromUint(0);
+        }
         
         canWithdraw = true;
         //Ensure calibration cycle is open
@@ -251,7 +260,7 @@ contract networkETF is Initializable, ContextUpgradeable, OwnableUpgradeable, Pa
 
         //Return user the tokens based on existing bonds, and update their timeTokenAllocated
         fMath.UD60x18 memory userBonds = fundManager.users[user].deposit;
-        fMath.UD60x18 memory totalTokenBonds = fMathUD60x18.sub(fundManager.myntDeposited, fundManager.tokenBondsUsed[token] );
+        fMath.UD60x18 memory totalTokenBonds = fMathUD60x18.sub(fundManager.myntDeposited, tokenBondsUsed);
         fMath.UD60x18 memory tokenAvailable = fundManager.tokenBalances[token];
         
         amount = fMathUD60x18.div(fMathUD60x18.mul(userBonds, tokenAvailable), totalTokenBonds);  
@@ -266,7 +275,15 @@ contract networkETF is Initializable, ContextUpgradeable, OwnableUpgradeable, Pa
         bool canWithdraw,
         string memory reason
     ) {
-            
+            // Check & update token data if necessary
+            // Update token data for cycle
+            uint tokenLastUpdated = fundManager.myntLastUpdated;
+            fMath.UD60x18 memory myntBondsUsed = fundManager.myntBondsUsed;
+            //If cycle bonds have not been allocated for this token yet, set to 0
+            if (tokenLastUpdated < (block.timestamp - fundManager.cycleLength)) {
+                myntBondsUsed = fMathUD60x18.fromUint(0);
+            }
+
             canWithdraw = true; 
             //Ensure calibration cycle is open
             if (!isCalibrationOpen()) {
@@ -294,7 +311,7 @@ contract networkETF is Initializable, ContextUpgradeable, OwnableUpgradeable, Pa
 
             //Return user the tokens based on existing bonds, and update their timeTokenAllocated
             fMath.UD60x18 memory userBonds = fundManager.users[user].deposit;
-            fMath.UD60x18 memory totalMYNTBonds = fMathUD60x18.sub(fundManager.myntDeposited, fundManager.myntBondsUsed);
+            fMath.UD60x18 memory totalMYNTBonds = fMathUD60x18.sub(fundManager.myntDeposited, myntBondsUsed);
             fMath.UD60x18 memory myntAvailable = fundManager.myntBalance;
 
             amount = fMathUD60x18.div(fMathUD60x18.mul(userBonds, myntAvailable), totalMYNTBonds);
